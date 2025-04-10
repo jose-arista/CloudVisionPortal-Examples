@@ -1,0 +1,120 @@
+path: []
+inputs:
+  codeUnits:
+    - unitContent: |-
+        function IS_V4_DEFAULT() {
+                 return prefix is 0.0.0.0/0 or prefix is ::/0;
+              }
+              function IS_PRIVATE() {
+                 if prefix covered_by 10.0.0.0/8 {
+                    return true;
+                 }
+                 else if prefix covered_by 172.16.0.0/12 {
+                    return true;
+                 }
+                 else if prefix covered_by 192.168.0.0/16 {
+                    return true;
+                 }
+                 else {
+                    return false;
+                 }
+              }
+              function IS_ORIGIN_AS_11608() {                  #as-path-set AS11608-PATHS
+                 return as_path.origin_as is 11608;            #  originates-from '11608'
+              }
+              function PREPEND_6() {
+                 as_path prepend destination_session.local.as;
+                 as_path prepend destination_session.local.as;
+                 as_path prepend destination_session.local.as;
+                 as_path prepend destination_session.local.as;
+                 as_path prepend destination_session.local.as;
+                 as_path prepend destination_session.local.as;
+                 return true;
+              }
+      unitName: COMMON
+    - unitContent: |-
+        function AS4258_IPV4_ATTRIBUTES() {              #route-policy AS4258-IPV4-ATTRIBUTES-RPL
+                       if community has_any { 4258:666, 4258:668 } { #  if community matches-any RTBH-DISCARD-COMMUNITIES then
+                          next_hop = 192.0.2.1;                      #    set next-hop discard
+                          community add { 65535:65281 };             #    set community (no-export) additive
+                             return true;
+                       }
+                       else if community has_any { 65535:0 } {       #  elseif community matches-any (65535:0) then
+                          local_preference = 0;                      #    set local-preference 0
+                          return true;
+                       }
+                       else if community has_any { 4258:70 } {       #  elseif community matches-any (4258:70) then
+                          local_preference = 70;                     #    set local-preference 70
+                          return true;
+                       }
+                       else if community has_any { 4258:80 } {       #  elseif community matches-any (4258:80) then
+                          local_preference = 80;                     #    set local-preference 80
+                          return true;
+                       }
+                       else if community has_any { 4258:90 } {       #  elseif community matches-any (4258:90) then
+                          local_preference = 90;                     #    set local-preference 90
+                          return true;
+                       }
+                       else if community has_any { 4258:65001 } {    #  elseif community matches-any (4258:65001) then
+                          as_path prepend 4258;                      #    prepend as-path 4258
+                          return true;
+                       }
+                       else if community has_any { 4258:65002 } {    #  elseif community matches-any (4258:65002) then
+                          as_path prepend 4258 4258;                 #    prepend as-path 4258 2
+                          return true;
+                       }
+                       else if community has_any { 4258:65003 } {    #  elseif community matches-any (4258:65003) then
+                          as_path prepend 4258 4258 4258;            #    prepend as-path 4258 3
+                          return true;
+                       }                                             #  endif
+                    }                                                #end-policy
+      unitName: AS4258
+    - unitContent: |-
+        function AS11608_V4_RCF() {                      #route-policy AS11608-IPv4-ROUTE-POLICY
+                       if prefix is 10.255.255.4/32 {                # FOR LAB PURPOSES ONLY
+                          return true;
+                       }
+                       if IS_PRIVATE() {                             #  apply AS4258-RFC1918-POLICY
+                          return false;
+                       }
+                       if IS_V4_DEFAULT() {                          #  apply AS4258-IPv4-DEFAULT-ROUTE-POLICY
+                          return false;
+                       }
+                       if AS4258_IPV4_ATTRIBUTES() {                 #  apply AS4258-IPV4-ATTRIBUTES-RPL
+                          return true;
+                       }
+                       if IS_ORIGIN_AS_11608() {                     #  if as-path in AS11608-PATHS then
+                          community add { 4258:123, 4258:2000 };     #    set community (c) additive
+                          local_preference = 85;                     #    set local-preference 85
+                          med = 10;                                  #    set med 10
+                          rpki.origin_as_validity = ROA_VALID;       #  FOR LAB PURPOSES ONLY
+                          return true;
+                       }
+                       else {                                        #  else
+                          return false;                              #    drop
+                       }                                             #  endif
+                    }
+      unitName: AS11608
+    - unitContent: null
+      unitName: BLANK
+  devCodeUnits:
+    - inputs:
+        devAssignments:
+          devAssignedUnits:
+            - COMMON
+            - AS11608
+            - AS4258
+      tags:
+        query: Role:Edge
+    - inputs:
+        devAssignments:
+          devAssignedUnits:
+            - COMMON
+      tags:
+        query: 'device:9974DCA77C4005771266E91451808E57 '
+    - inputs:
+        devAssignments:
+          devAssignedUnits:
+            - BLANK
+      tags:
+        query: 'device:90504AF7EDB930F80D1D36F350A13C3A '

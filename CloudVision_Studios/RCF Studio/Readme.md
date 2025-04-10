@@ -1,6 +1,6 @@
 # Routing Control Function (RCF) Studio
 
-RCF Studio allows you to define multiple code units and use them across devices in the network.
+RCF Studio allows you to define multiple code units and use them across devices in the network. Version v1.0.2 allows the use of device tags to assign code units. Sample inputs are just an example. The studio can also be installed as a CVP package.
 
 ## Functionality Overview
 
